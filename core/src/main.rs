@@ -3,9 +3,17 @@ use std::env;
 use std::path::Path;
 use std::result::Result;
 
+use libloading::{Library, Symbol};
+
 /// Load a single source, given it's path.
-fn load_module(p: &Path) {
-    println!("{}", p.display());
+fn load_source(p: &Path) {
+    let lib = Library::new(p).unwrap();
+
+    unsafe {
+        let func: Symbol< fn() > = lib.get(b"feola_search").unwrap();
+
+        func();
+    }
 }
 
 /// Load all the sources available in the paths.
