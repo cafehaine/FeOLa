@@ -2,6 +2,7 @@ use glob::glob;
 use std::env;
 use std::path::Path;
 use std::result::Result;
+use std::ffi::CString;
 
 use libloading::{Library, Symbol};
 
@@ -10,9 +11,9 @@ fn load_source(p: &Path) {
     let lib = Library::new(p).unwrap();
 
     unsafe {
-        let func: Symbol< fn() > = lib.get(b"feola_search").unwrap();
+        let func: Symbol< fn(CString) > = lib.get(b"feola_search").unwrap();
 
-        func();
+        func(CString::new("Hello").unwrap());
     }
 }
 
