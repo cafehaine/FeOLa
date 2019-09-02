@@ -1,21 +1,8 @@
 use glob::glob;
-use std::env;
-use std::path::Path;
-use std::result::Result;
-use std::ffi::CString;
-
 use libloading::{Library, Symbol};
-
-/// Load a single source, given it's path.
-fn load_source(p: &Path) {
-    let lib = Library::new(p).unwrap();
-
-    unsafe {
-        let func: Symbol< fn(CString) > = lib.get(b"feola_search").unwrap();
-
-        func(CString::new("Hello").unwrap());
-    }
-}
+use std::env;
+use std::ffi::CString;
+use std::result::Result;
 
 /// Load all the sources available in the paths.
 ///
@@ -28,7 +15,12 @@ fn load_sources() {
                 let pattern = format!("{}/*.so", path.display());
 
                 for entry in glob(&pattern).unwrap().filter_map(Result::ok) {
-                    load_source(&entry);
+                    let lib = Library::new(&entry).unwrap();
+                    let func: Symbol<fn(CString)>;
+                    unsafe {
+                        func = lib.get(b"feola_search").unwrap();
+                    }
+                    func(CString::new("Hello").unwrap());
                 }
             }
         }
