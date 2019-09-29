@@ -1,9 +1,11 @@
 use glob::glob;
 use libloading::{Library, Symbol};
 use std::env;
+use std::thread;
 use std::ffi::CString;
-use std::os::unix::net::UnixListener;
+use std::os::unix::net::{UnixListener, UnixStream};
 use std::result::Result;
+#[macro_use] extern crate log;
 
 struct Source {
     lib: Box<Library>,
@@ -39,6 +41,7 @@ fn load_sources(sources: &mut Vec<Source>) {
                 let pattern = format!("{}/*.so", path.display());
 
                 for entry in glob(&pattern).unwrap().filter_map(Result::ok) {
+                    debug!("Loading source {:?}", entry);
                     let lib = Box::new(Library::new(&entry).unwrap());
                     let source = Source { lib: lib};
                     source.init();
@@ -50,18 +53,22 @@ fn load_sources(sources: &mut Vec<Source>) {
     }
 }
 
+fn handle_frontend(stream: UnixStream) {
+    //TODO
+}
+
 fn main() {
+    env_logger::init();
+
     extern crate xdg;
     let xdg_dirs = xdg::BaseDirectories::with_prefix("feola").unwrap();
 
     // Load sources
+    info!("Loading sources");
     let mut sources: Vec<Source> = vec![];
     load_sources(&mut sources);
-    // test code
-    for source in &sources {
-        source.search("Test".to_string());
-    }
 
+    info!("Setting up UNIX socket");
     let socket_path = xdg_dirs
         .place_runtime_file("socket")
         .expect("Cannot create runtime directory");
@@ -70,6 +77,18 @@ fn main() {
     // delete the previous socket first?
     let listener = UnixListener::bind(socket_path).expect("Cannot bind socket");
     //TODO
+    info!("Awaiting frontends");
+    for stream in listener.incoming() {
+        match stream {
+            Ok(stream) => {
+                debug!("New frontend");
+                thread::spawn(|| handle_frontend(stream));
+            }
+            Err(err) => {
+                warn!("Could not connect to frontend.")
+            }
+        }
+    }
     // Setup pipes for the frontends
     // Poll the pipes (or maybe there's a way to wait on events?)
     // Transmit the query from the pipe to all of the sources
