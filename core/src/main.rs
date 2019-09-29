@@ -17,6 +17,15 @@ impl Source {
         }
         func(CString::new(string).unwrap());
     }
+
+    fn init(&self) {
+        let func: Symbol<fn()>;
+        unsafe {
+            func = self.lib.get(b"feola_init").unwrap();
+        }
+        func();
+    }
+
 }
 
 /// Load all the sources available in the paths.
@@ -31,7 +40,9 @@ fn load_sources(sources: &mut Vec<Source>) {
 
                 for entry in glob(&pattern).unwrap().filter_map(Result::ok) {
                     let lib = Box::new(Library::new(&entry).unwrap());
-                    sources.push(Source { lib: lib })
+                    let source = Source { lib: lib};
+                    source.init();
+                    sources.push(source)
                 }
             }
         }
