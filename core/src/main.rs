@@ -1,7 +1,9 @@
 use glob::glob;
 use libloading::{Library, Symbol};
 use std::env;
+use std::io;
 use std::thread;
+use std::io::Read;
 use std::ffi::CString;
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::result::Result;
@@ -53,8 +55,17 @@ fn load_sources(sources: &mut Vec<Source>) {
     }
 }
 
-fn handle_frontend(stream: UnixStream) {
+fn handle_frontend(unix_stream: UnixStream) -> io::Result<()> {
     //TODO
+    let mut buf_reader = io::BufReader::new(unix_stream);
+    let mut buffer = String::new();
+
+    buf_reader.read_to_string(&mut buffer)?;
+
+    debug!("{}", buffer);
+    // Transmit the query from the pipe to all of the sources
+    // Stream the results to the frontend (how?)
+    Ok(())
 }
 
 fn main() {
@@ -82,15 +93,11 @@ fn main() {
         match stream {
             Ok(stream) => {
                 debug!("New frontend");
-                thread::spawn(|| handle_frontend(stream));
+                thread::spawn(move || handle_frontend(stream));
             }
-            Err(err) => {
+            Err(_err) => {
                 warn!("Could not connect to frontend.")
             }
         }
     }
-    // Setup pipes for the frontends
-    // Poll the pipes (or maybe there's a way to wait on events?)
-    // Transmit the query from the pipe to all of the sources
-    // Stream the results to the frontend (how?)
 }
