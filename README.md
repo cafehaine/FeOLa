@@ -1,3 +1,7 @@
+# Unmaintained project!
+
+I might take another stab at this, but at the moment I no longer plan on developing this.
+
 # What is FeOLa
 
 FeOLa is the FerrousOxideLauncher. It is meant to be a modular clone of
